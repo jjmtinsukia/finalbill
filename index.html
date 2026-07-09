@@ -1183,12 +1183,14 @@
                 const raised = allData.filter(r => r.finalBillStatus === 'Raised').length;
                 const notRaised = allData.filter(r => r.finalBillStatus === 'Not Raised').length;
                 const fundRaised = allData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
+                const billRaisedFundNotRaised = allData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
 
                 const districtCards = [
                     { icon: '🏗️', value: total, label: 'Total Handed-Over Schemes', sub: 'All sub-divisions', iconBg: 'accent-blue-bg', filterId: 'district-total' },
                     { icon: '✅', value: raised, label: 'Final Bill Raised', sub: `${total > 0 ? Math.round(raised/total*100) : 0}% of total`, iconBg: 'accent-green-bg', filterId: 'district-raised' },
                     { icon: '⏳', value: notRaised, label: 'Final Bill Not Raised', sub: `${total > 0 ? Math.round(notRaised/total*100) : 0}% of total`, iconBg: 'accent-orange-bg', filterId: 'district-notRaised' },
                     { icon: '💰', value: fundRaised, label: 'Fund Demand Raised', sub: `${total > 0 ? Math.round(fundRaised/total*100) : 0}% of total`, iconBg: 'accent-purple-bg', filterId: 'district-fundRaised' },
+                    { icon: '⚠️', value: billRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${total > 0 ? Math.round(billRaisedFundNotRaised/total*100) : 0}% of total`, iconBg: 'accent-red-bg', filterId: 'district-billRaisedFundNot' },
                 ];
 
                 // Tinsukia sub-division KPIs
@@ -1197,12 +1199,14 @@
                 const tinsukiaRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Raised').length;
                 const tinsukiaNotRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Not Raised').length;
                 const tinsukiaFundRaised = tinsukiaData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
+                const tinsukiaBillRaisedFundNotRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
 
                 const tinsukiaCards = [
                     { icon: '🏗️', value: tinsukiaTotal, label: 'Total Handed-Over Schemes', sub: 'Tinsukia subdivision', iconBg: 'accent-blue-bg', filterId: 'tinsukia-total' },
                     { icon: '✅', value: tinsukiaRaised, label: 'Final Bill Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-green-bg', filterId: 'tinsukia-raised' },
                     { icon: '⏳', value: tinsukiaNotRaised, label: 'Final Bill Not Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaNotRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-orange-bg', filterId: 'tinsukia-notRaised' },
                     { icon: '💰', value: tinsukiaFundRaised, label: 'Fund Demand Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaFundRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-purple-bg', filterId: 'tinsukia-fundRaised' },
+                    { icon: '⚠️', value: tinsukiaBillRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaBillRaisedFundNotRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-red-bg', filterId: 'tinsukia-billRaisedFundNot' },
                 ];
 
                 // Digboi sub-division KPIs
@@ -1211,12 +1215,14 @@
                 const digboiRaised = digboiData.filter(r => r.finalBillStatus === 'Raised').length;
                 const digboiNotRaised = digboiData.filter(r => r.finalBillStatus === 'Not Raised').length;
                 const digboiFundRaised = digboiData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
+                const digboiBillRaisedFundNotRaised = digboiData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
 
                 const digboiCards = [
                     { icon: '🏗️', value: digboiTotal, label: 'Total Handed-Over Schemes', sub: 'Digboi subdivision', iconBg: 'accent-blue-bg', filterId: 'digboi-total' },
                     { icon: '✅', value: digboiRaised, label: 'Final Bill Raised', sub: `${digboiTotal > 0 ? Math.round(digboiRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-green-bg', filterId: 'digboi-raised' },
                     { icon: '⏳', value: digboiNotRaised, label: 'Final Bill Not Raised', sub: `${digboiTotal > 0 ? Math.round(digboiNotRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-orange-bg', filterId: 'digboi-notRaised' },
                     { icon: '💰', value: digboiFundRaised, label: 'Fund Demand Raised', sub: `${digboiTotal > 0 ? Math.round(digboiFundRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-purple-bg', filterId: 'digboi-fundRaised' },
+                    { icon: '⚠️', value: digboiBillRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${digboiTotal > 0 ? Math.round(digboiBillRaisedFundNotRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-red-bg', filterId: 'digboi-billRaisedFundNot' },
                 ];
 
                 // Render all three category sections
@@ -1530,6 +1536,9 @@
                 } else if (filterId === 'district-fundRaised') {
                     dataToExport = allData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised'));
                     filename = 'District_Fund_Demand_Raised';
+                } else if (filterId === 'district-billRaisedFundNot') {
+                    dataToExport = allData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
+                    filename = 'District_Bill_Raised_Fund_Not_Raised';
                 } else if (filterId === 'tinsukia-total') {
                     dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia'));
                     filename = 'Tinsukia_All_Schemes';
@@ -1542,6 +1551,9 @@
                 } else if (filterId === 'tinsukia-fundRaised') {
                     dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && (r.fundDemandStatus || '').toLowerCase().includes('raised'));
                     filename = 'Tinsukia_Fund_Demand_Raised';
+                } else if (filterId === 'tinsukia-billRaisedFundNot') {
+                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
+                    filename = 'Tinsukia_Bill_Raised_Fund_Not_Raised';
                 } else if (filterId === 'digboi-total') {
                     dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi'));
                     filename = 'Digboi_All_Schemes';
@@ -1554,6 +1566,9 @@
                 } else if (filterId === 'digboi-fundRaised') {
                     dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && (r.fundDemandStatus || '').toLowerCase().includes('raised'));
                     filename = 'Digboi_Fund_Demand_Raised';
+                } else if (filterId === 'digboi-billRaisedFundNot') {
+                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
+                    filename = 'Digboi_Bill_Raised_Fund_Not_Raised';
                 }
 
                 // Generate CSV

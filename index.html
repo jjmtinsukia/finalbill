@@ -682,6 +682,81 @@
             font-weight: 600;
         }
 
+        /* Print Report */
+        #printReportSection {
+            display: none;
+        }
+        .print-report-header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 3px solid #1a237e;
+            padding-bottom: 16px;
+        }
+        .print-report-header h1 {
+            font-size: 1.25rem;
+            color: #1a237e;
+            margin-bottom: 6px;
+        }
+        .print-report-header .meta {
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+        .print-report-scope {
+            margin-bottom: 26px;
+            page-break-inside: avoid;
+        }
+        .print-report-scope h2 {
+            font-size: 1rem;
+            color: #fff;
+            background: #1a237e;
+            padding: 8px 14px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .print-report-scope table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .print-report-scope th,
+        .print-report-scope td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .print-report-scope th {
+            background: #f1f5f9;
+            font-weight: 700;
+            color: #1a237e;
+        }
+        .print-report-scope td.num {
+            text-align: right;
+            font-weight: 700;
+        }
+        .print-report-footer {
+            margin-top: 20px;
+            font-size: 0.72rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printReportSection,
+            #printReportSection * {
+                visibility: visible;
+            }
+            #printReportSection {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 10px 20px;
+            }
+        }
+
         /* Footer */
         .footer-note {
             text-align: center;
@@ -729,8 +804,12 @@
         <!-- Main Content (hidden until loaded) -->
         <div id="mainContent" style="display:none;">
             <!-- KPI Cards Section -->
-            <div class="section-title">📊 Key Performance Indicators</div>
-            <div style="font-size:0.75rem;color:#94a3b8;margin-top:-8px;margin-bottom:14px;">💡 Tip: click any KPI card below to download that specific slice of data as CSV.</div>
+            <div class="section-title" style="justify-content:space-between;">
+                <span style="display:flex;align-items:center;gap:10px;">📊 Key Performance Indicators</span>
+                <button class="btn btn-export" id="printKPIBtn" style="font-size:0.78rem;padding:8px 16px;">🖨️ Print KPI Report</button>
+            </div>
+            <div style="font-size:0.75rem;color:#94a3b8;margin-top:-8px;margin-bottom:14px;">💡 Tip: click any KPI card below to download that specific slice of data as CSV, or use the button above to print a formatted KPI report.</div>
+            <div id="printReportSection"></div>
 
             <!-- District Level -->
             <div class="category-section">
@@ -1323,6 +1402,60 @@
             }
 
             // ─────────────────────────────────────
+            // PRINT KPI REPORT
+            // ─────────────────────────────────────
+            function buildPrintReportHTML() {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+                const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+                const tinsukiaData = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia'));
+                const digboiData = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi'));
+
+                const scopes = [
+                    { label: 'Tinsukia District (Overall)', dataset: allData, scopeLabel: 'District' },
+                    { label: 'Tinsukia Sub-Division', dataset: tinsukiaData, scopeLabel: 'Tinsukia' },
+                    { label: 'Digboi Sub-Division', dataset: digboiData, scopeLabel: 'Digboi' },
+                ];
+
+                const scopeBlocks = scopes.map(scope => {
+                    const cards = buildKPICards(scope.dataset, scope.scopeLabel);
+                    const rows = cards.map(c => `
+                        <tr>
+                            <td>${escapeHTML(c.label)}</td>
+                            <td class="num">${c.value}</td>
+                            <td>${escapeHTML(c.sub)}</td>
+                        </tr>
+                    `).join('');
+                    return `
+                        <div class="print-report-scope">
+                            <h2>${escapeHTML(scope.label)}</h2>
+                            <table>
+                                <thead><tr><th>Metric</th><th>Count</th><th>Remarks</th></tr></thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="print-report-header">
+                        <h1>Public Health Engineering Department — Jal Jeevan Mission, Tinsukia Division</h1>
+                        <div class="meta">Key Performance Indicators Report &nbsp;|&nbsp; Generated on ${dateStr} at ${timeStr}</div>
+                    </div>
+                    ${scopeBlocks}
+                    <div class="print-report-footer">Government of Assam · PHE Department · Tinsukia Division · Auto-generated from live scheme handover data</div>
+                `;
+            }
+
+            function printKPIReport() {
+                const section = document.getElementById('printReportSection');
+                if (!section) return;
+                section.innerHTML = buildPrintReportHTML();
+                window.print();
+            }
+
+            // ─────────────────────────────────────
             // RENDER CHARTS
             // ─────────────────────────────────────
             function renderCharts() {
@@ -1561,6 +1694,8 @@
             filterDCApproval.addEventListener('change', applyAllFilters);
             filterFundDemand.addEventListener('change', applyAllFilters);
             searchInput.addEventListener('input', debounce(applyAllFilters, 300));
+            const printKPIBtn = document.getElementById('printKPIBtn');
+            if (printKPIBtn) printKPIBtn.addEventListener('click', printKPIReport);
 
             // Sortable columns
             document.querySelectorAll('#dataTable thead th[data-sort]').forEach(th => {

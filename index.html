@@ -254,6 +254,14 @@
         .category-title.digboi {
             background: #16a34a;
         }
+        .kpi-subgroup-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 14px 0 8px;
+        }
 
         /* KPI Cards */
         .kpi-grid {
@@ -314,6 +322,17 @@
             color: #94a3b8;
             margin-top: 2px;
         }
+        .kpi-card .kpi-download {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-size: 0.85rem;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+        }
+        .kpi-card:hover .kpi-download {
+            opacity: 0.9;
+        }
         .accent-blue-bg {
             background: #eff6ff;
             color: #2563eb;
@@ -333,6 +352,14 @@
         .accent-purple-bg {
             background: #faf5ff;
             color: #7c3aed;
+        }
+        .accent-teal-bg {
+            background: #ecfeff;
+            color: #0891b2;
+        }
+        .accent-pink-bg {
+            background: #fdf2f8;
+            color: #be185d;
         }
 
         /* Charts Row */
@@ -487,7 +514,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.83rem;
-            min-width: 1000px;
+            min-width: 1200px;
         }
         table thead {
             background: #1a237e;
@@ -562,6 +589,14 @@
         .badge-digboi {
             background: #f0fdf4;
             color: #166534;
+        }
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-underprocess {
+            background: #fff7ed;
+            color: #9a3412;
         }
 
         /* Pagination */
@@ -695,7 +730,8 @@
         <div id="mainContent" style="display:none;">
             <!-- KPI Cards Section -->
             <div class="section-title">📊 Key Performance Indicators</div>
-            
+            <div style="font-size:0.75rem;color:#94a3b8;margin-top:-8px;margin-bottom:14px;">💡 Tip: click any KPI card below to download that specific slice of data as CSV.</div>
+
             <!-- District Level -->
             <div class="category-section">
                 <div class="category-title district">🌍 Tinsukia District (Overall)</div>
@@ -739,6 +775,9 @@
                         <select id="filterSubDivision"><option value="">All Sub-Divisions</option></select>
                         <select id="filterOfficer"><option value="">All Officers</option></select>
                         <select id="filterStatus"><option value="">All Bill Status</option><option value="Raised">Raised</option><option value="Not Raised">Not Raised</option></select>
+                        <select id="filterEbillStatus"><option value="">All Ebill Status</option><option value="Approved">Approved</option><option value="Under Process">Under Process</option></select>
+                        <select id="filterDCApproval"><option value="">All DC Approval</option><option value="Approved">Approved</option><option value="Pending">Pending</option></select>
+                        <select id="filterFundDemand"><option value="">All Fund Demand</option><option value="Raised">Raised</option><option value="Not Raised">Not Raised</option></select>
                         <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by SMT ID, Scheme Name, Officer...">
                         <button class="btn btn-reset" onclick="resetFilters()">↺ Reset</button>
                     </div>
@@ -758,6 +797,8 @@
                                 <th data-sort="schemeName">Scheme Name <span class="sort-icon">↕</span></th>
                                 <th data-sort="handoverDate">Handover Date <span class="sort-icon">↕</span></th>
                                 <th data-sort="finalBillStatus">Final Bill Status <span class="sort-icon">↕</span></th>
+                                <th data-sort="ebillStatus">Ebill Status (Division) <span class="sort-icon">↕</span></th>
+                                <th data-sort="dcApproval">DC Approval <span class="sort-icon">↕</span></th>
                                 <th data-sort="fundDemandStatus">Fund Demand Status <span class="sort-icon">↕</span></th>
                             </tr>
                         </thead>
@@ -809,6 +850,9 @@
             const filterSubDivision = document.getElementById('filterSubDivision');
             const filterOfficer = document.getElementById('filterOfficer');
             const filterStatus = document.getElementById('filterStatus');
+            const filterEbillStatus = document.getElementById('filterEbillStatus');
+            const filterDCApproval = document.getElementById('filterDCApproval');
+            const filterFundDemand = document.getElementById('filterFundDemand');
 
             // ─────────────────────────────────────
             // FETCH & PARSE CSV
@@ -866,6 +910,12 @@
                         finalBillStatus: getField(values, headerMap, ['finalbillstatus', 'final_bill_status',
                             'billstatus', 'finalbill'
                         ]),
+                        ebillStatus: getField(values, headerMap, ['ebillstatusdivision', 'ebill_status_division',
+                            'ebillstatus', 'e_bill_status', 'ebill', 'ebillstatus_division'
+                        ]),
+                        dcApproval: getField(values, headerMap, ['dcapproval', 'dc_approval', 'dcapprovalstatus',
+                            'dc_approval_status'
+                        ]),
                         fundDemandStatus: getField(values, headerMap, ['funddemandstatus', 'fund_demand_status',
                             'funddemand', 'fundstatus'
                         ]),
@@ -878,7 +928,9 @@
                     record.schemeName = (record.schemeName || '').trim();
                     record.handoverDate = (record.handoverDate || '').trim();
                     record.finalBillStatus = normalizeStatus(record.finalBillStatus || '');
-                    record.fundDemandStatus = (record.fundDemandStatus || '').trim();
+                    record.ebillStatus = normalizeEbillStatus(record.ebillStatus || '');
+                    record.dcApproval = normalizeDCStatus(record.dcApproval || '');
+                    record.fundDemandStatus = normalizeStatus(record.fundDemandStatus || '');
                     if (record.smtId || record.schemeName) {
                         records.push(record);
                     }
@@ -951,6 +1003,22 @@
                 return 'Not Raised';
             }
 
+            function normalizeEbillStatus(status) {
+                const s = status.trim().toLowerCase();
+                if (s.includes('approv')) return 'Approved';
+                if (s.includes('process')) return 'Under Process';
+                if (s === '') return 'Not Available';
+                return status.trim();
+            }
+
+            function normalizeDCStatus(status) {
+                const s = status.trim().toLowerCase();
+                if (s.includes('approv')) return 'Approved';
+                if (s.includes('pend')) return 'Pending';
+                if (s === '') return 'Not Available';
+                return status.trim();
+            }
+
             // ─────────────────────────────────────
             // POPULATE DROPDOWNS
             // ─────────────────────────────────────
@@ -978,6 +1046,9 @@
                 const subDivFilter = filterSubDivision.value;
                 const officerFilter = filterOfficer.value;
                 const statusFilter = filterStatus.value;
+                const ebillFilter = filterEbillStatus.value;
+                const dcFilter = filterDCApproval.value;
+                const fundFilter = filterFundDemand.value;
                 const searchQuery = searchInput.value.trim().toLowerCase();
 
                 let data = [...allData];
@@ -990,6 +1061,15 @@
                 }
                 if (statusFilter) {
                     data = data.filter(r => r.finalBillStatus === statusFilter);
+                }
+                if (ebillFilter) {
+                    data = data.filter(r => r.ebillStatus === ebillFilter);
+                }
+                if (dcFilter) {
+                    data = data.filter(r => r.dcApproval === dcFilter);
+                }
+                if (fundFilter) {
+                    data = data.filter(r => r.fundDemandStatus === fundFilter);
                 }
                 if (searchQuery) {
                     data = data.filter(r =>
@@ -1059,6 +1139,9 @@
                 filterSubDivision.value = '';
                 filterOfficer.value = '';
                 filterStatus.value = '';
+                filterEbillStatus.value = '';
+                filterDCApproval.value = '';
+                filterFundDemand.value = '';
                 searchInput.value = '';
                 currentSort = { field: 'slNo', direction: 'asc' };
                 applyAllFilters();
@@ -1075,7 +1158,7 @@
                 tableBody.innerHTML = '';
                 if (pageData.length === 0) {
                     tableBody.innerHTML =
-                        '<tr><td colspan="8" class="no-data">No matching records found. Try adjusting filters.</td></tr>';
+                        '<tr><td colspan="10" class="no-data">No matching records found. Try adjusting filters.</td></tr>';
                 } else {
                     pageData.forEach((r, idx) => {
                         const billBadgeClass = r.finalBillStatus === 'Raised' ? 'badge-raised' :
@@ -1083,8 +1166,11 @@
                         const subDivBadgeClass = (r.subDivision || '').toLowerCase().includes('tinsukia') ?
                             'badge-tinsukia' :
                             (r.subDivision || '').toLowerCase().includes('digboi') ? 'badge-digboi' : '';
-                        const fundBadgeClass = (r.fundDemandStatus || '').toLowerCase().includes('raised') ?
-                            'badge-completed' : 'badge-pending';
+                        const ebillBadgeClass = r.ebillStatus === 'Approved' ? 'badge-approved' :
+                            'badge-underprocess';
+                        const dcBadgeClass = r.dcApproval === 'Approved' ? 'badge-approved' : 'badge-pending';
+                        const fundBadgeClass = r.fundDemandStatus === 'Raised' ? 'badge-completed' :
+                            'badge-pending';
 
                         tableBody.innerHTML += `
                             <tr>
@@ -1095,6 +1181,8 @@
                                 <td>${escapeHTML(r.schemeName || '-')}</td>
                                 <td>${escapeHTML(r.handoverDate || '-')}</td>
                                 <td><span class="badge ${billBadgeClass}">${escapeHTML(r.finalBillStatus || '-')}</span></td>
+                                <td><span class="badge ${ebillBadgeClass}">${escapeHTML(r.ebillStatus || '-')}</span></td>
+                                <td><span class="badge ${dcBadgeClass}">${escapeHTML(r.dcApproval || '-')}</span></td>
                                 <td><span class="badge ${fundBadgeClass}">${escapeHTML(r.fundDemandStatus || '-')}</span></td>
                             </tr>
                         `;
@@ -1177,81 +1265,61 @@
             // ─────────────────────────────────────
             // RENDER KPIs
             // ─────────────────────────────────────
+            // Builds the standard 8-card KPI set for a given dataset slice.
+            // Each card carries its own `data` array (already filtered) so a click
+            // can export exactly what the card represents.
+            function buildKPICards(dataset, scopeLabel) {
+                const total = dataset.length;
+                const pct = (n) => total > 0 ? Math.round(n / total * 100) : 0;
+
+                const billRaised = dataset.filter(r => r.finalBillStatus === 'Raised');
+                const billNotRaised = dataset.filter(r => r.finalBillStatus === 'Not Raised');
+                const ebillApproved = dataset.filter(r => r.ebillStatus === 'Approved');
+                const ebillUnderProcess = dataset.filter(r => r.ebillStatus === 'Under Process');
+                const dcApproved = dataset.filter(r => r.dcApproval === 'Approved');
+                const dcPending = dataset.filter(r => r.dcApproval === 'Pending');
+                const fundRaised = dataset.filter(r => r.fundDemandStatus === 'Raised');
+
+                return [
+                    { icon: '🏗️', value: total, label: 'Total Handed-Over Schemes', sub: scopeLabel, iconBg: 'accent-blue-bg', data: dataset },
+                    { icon: '✅', value: billRaised.length, label: 'Final Bill Raised', sub: `${pct(billRaised.length)}% of ${scopeLabel}`, iconBg: 'accent-green-bg', data: billRaised },
+                    { icon: '⏳', value: billNotRaised.length, label: 'Final Bill Not Raised', sub: `${pct(billNotRaised.length)}% of ${scopeLabel}`, iconBg: 'accent-orange-bg', data: billNotRaised },
+                    { icon: '📄', value: ebillApproved.length, label: 'Ebill Approved (Division)', sub: `${pct(ebillApproved.length)}% of ${scopeLabel}`, iconBg: 'accent-teal-bg', data: ebillApproved },
+                    { icon: '🕓', value: ebillUnderProcess.length, label: 'Ebill Under Process (Division)', sub: `${pct(ebillUnderProcess.length)}% of ${scopeLabel}`, iconBg: 'accent-purple-bg', data: ebillUnderProcess },
+                    { icon: '🖊️', value: dcApproved.length, label: 'Approved by DC', sub: `${pct(dcApproved.length)}% of ${scopeLabel}`, iconBg: 'accent-green-bg', data: dcApproved },
+                    { icon: '⌛', value: dcPending.length, label: 'Pending at DC', sub: `${pct(dcPending.length)}% of ${scopeLabel}`, iconBg: 'accent-red-bg', data: dcPending },
+                    { icon: '💰', value: fundRaised.length, label: 'Fund Demand Raised', sub: `vs ${dcApproved.length} Approved by DC`, iconBg: 'accent-pink-bg', data: fundRaised },
+                ];
+            }
+
+            function renderKPIGroup(container, dataset, scopeLabel) {
+                const cards = buildKPICards(dataset, scopeLabel);
+                container.innerHTML = '';
+                cards.forEach(c => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'kpi-card';
+                    cardEl.title = 'Click to download this data as CSV';
+                    cardEl.innerHTML = `
+                        <span class="kpi-download">📥</span>
+                        <div class="kpi-icon ${c.iconBg}">${c.icon}</div>
+                        <div class="kpi-value">${c.value}</div>
+                        <div class="kpi-label">${c.label}</div>
+                        <div class="kpi-sub">${c.sub}</div>
+                    `;
+                    cardEl.addEventListener('click', () => {
+                        exportRecordsAsCSV(c.data, `${scopeLabel}_${c.label}`.replace(/[^a-zA-Z0-9]+/g, '_'));
+                    });
+                    container.appendChild(cardEl);
+                });
+            }
+
             function renderKPIs() {
-                // District-level KPIs
-                const total = allData.length;
-                const raised = allData.filter(r => r.finalBillStatus === 'Raised').length;
-                const notRaised = allData.filter(r => r.finalBillStatus === 'Not Raised').length;
-                const fundRaised = allData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
-                const billRaisedFundNotRaised = allData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
-
-                const districtCards = [
-                    { icon: '🏗️', value: total, label: 'Total Handed-Over Schemes', sub: 'All sub-divisions', iconBg: 'accent-blue-bg', filterId: 'district-total' },
-                    { icon: '✅', value: raised, label: 'Final Bill Raised', sub: `${total > 0 ? Math.round(raised/total*100) : 0}% of total`, iconBg: 'accent-green-bg', filterId: 'district-raised' },
-                    { icon: '⏳', value: notRaised, label: 'Final Bill Not Raised', sub: `${total > 0 ? Math.round(notRaised/total*100) : 0}% of total`, iconBg: 'accent-orange-bg', filterId: 'district-notRaised' },
-                    { icon: '💰', value: fundRaised, label: 'Fund Demand Raised', sub: `${total > 0 ? Math.round(fundRaised/total*100) : 0}% of total`, iconBg: 'accent-purple-bg', filterId: 'district-fundRaised' },
-                    { icon: '⚠️', value: billRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${total > 0 ? Math.round(billRaisedFundNotRaised/total*100) : 0}% of total`, iconBg: 'accent-red-bg', filterId: 'district-billRaisedFundNot' },
-                ];
-
-                // Tinsukia sub-division KPIs
                 const tinsukiaData = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia'));
-                const tinsukiaTotal = tinsukiaData.length;
-                const tinsukiaRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Raised').length;
-                const tinsukiaNotRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Not Raised').length;
-                const tinsukiaFundRaised = tinsukiaData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
-                const tinsukiaBillRaisedFundNotRaised = tinsukiaData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
-
-                const tinsukiaCards = [
-                    { icon: '🏗️', value: tinsukiaTotal, label: 'Total Handed-Over Schemes', sub: 'Tinsukia subdivision', iconBg: 'accent-blue-bg', filterId: 'tinsukia-total' },
-                    { icon: '✅', value: tinsukiaRaised, label: 'Final Bill Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-green-bg', filterId: 'tinsukia-raised' },
-                    { icon: '⏳', value: tinsukiaNotRaised, label: 'Final Bill Not Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaNotRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-orange-bg', filterId: 'tinsukia-notRaised' },
-                    { icon: '💰', value: tinsukiaFundRaised, label: 'Fund Demand Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaFundRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-purple-bg', filterId: 'tinsukia-fundRaised' },
-                    { icon: '⚠️', value: tinsukiaBillRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${tinsukiaTotal > 0 ? Math.round(tinsukiaBillRaisedFundNotRaised/tinsukiaTotal*100) : 0}% of subdivision`, iconBg: 'accent-red-bg', filterId: 'tinsukia-billRaisedFundNot' },
-                ];
-
-                // Digboi sub-division KPIs
                 const digboiData = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi'));
-                const digboiTotal = digboiData.length;
-                const digboiRaised = digboiData.filter(r => r.finalBillStatus === 'Raised').length;
-                const digboiNotRaised = digboiData.filter(r => r.finalBillStatus === 'Not Raised').length;
-                const digboiFundRaised = digboiData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
-                const digboiBillRaisedFundNotRaised = digboiData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised')).length;
 
-                const digboiCards = [
-                    { icon: '🏗️', value: digboiTotal, label: 'Total Handed-Over Schemes', sub: 'Digboi subdivision', iconBg: 'accent-blue-bg', filterId: 'digboi-total' },
-                    { icon: '✅', value: digboiRaised, label: 'Final Bill Raised', sub: `${digboiTotal > 0 ? Math.round(digboiRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-green-bg', filterId: 'digboi-raised' },
-                    { icon: '⏳', value: digboiNotRaised, label: 'Final Bill Not Raised', sub: `${digboiTotal > 0 ? Math.round(digboiNotRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-orange-bg', filterId: 'digboi-notRaised' },
-                    { icon: '💰', value: digboiFundRaised, label: 'Fund Demand Raised', sub: `${digboiTotal > 0 ? Math.round(digboiFundRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-purple-bg', filterId: 'digboi-fundRaised' },
-                    { icon: '⚠️', value: digboiBillRaisedFundNotRaised, label: 'Bill Raised but Fund Demand Not Raised', sub: `${digboiTotal > 0 ? Math.round(digboiBillRaisedFundNotRaised/digboiTotal*100) : 0}% of subdivision`, iconBg: 'accent-red-bg', filterId: 'digboi-billRaisedFundNot' },
-                ];
-
-                // Render all three category sections
-                kpiGridDistrict.innerHTML = districtCards.map(c => `
-                    <div class="kpi-card" data-filter-id="${c.filterId}" onclick="exportKPIData('${c.filterId}', '${c.label}')">
-                        <div class="kpi-icon ${c.iconBg}">${c.icon}</div>
-                        <div class="kpi-value">${c.value}</div>
-                        <div class="kpi-label">${c.label}</div>
-                        <div class="kpi-sub">${c.sub}</div>
-                    </div>
-                `).join('');
-
-                kpiGridTinsukia.innerHTML = tinsukiaCards.map(c => `
-                    <div class="kpi-card" data-filter-id="${c.filterId}" onclick="exportKPIData('${c.filterId}', '${c.label}')">
-                        <div class="kpi-icon ${c.iconBg}">${c.icon}</div>
-                        <div class="kpi-value">${c.value}</div>
-                        <div class="kpi-label">${c.label}</div>
-                        <div class="kpi-sub">${c.sub}</div>
-                    </div>
-                `).join('');
-
-                kpiGridDigboi.innerHTML = digboiCards.map(c => `
-                    <div class="kpi-card" data-filter-id="${c.filterId}" onclick="exportKPIData('${c.filterId}', '${c.label}')">
-                        <div class="kpi-icon ${c.iconBg}">${c.icon}</div>
-                        <div class="kpi-value">${c.value}</div>
-                        <div class="kpi-label">${c.label}</div>
-                        <div class="kpi-sub">${c.sub}</div>
-                    </div>
-                `).join('');
+                renderKPIGroup(kpiGridDistrict, allData, 'District');
+                renderKPIGroup(kpiGridTinsukia, tinsukiaData, 'Tinsukia');
+                renderKPIGroup(kpiGridDigboi, digboiData, 'Digboi');
             }
 
             // ─────────────────────────────────────
@@ -1430,11 +1498,13 @@
             // ─────────────────────────────────────
             // EXPORT CSV
             // ─────────────────────────────────────
-            function exportCSV() {
-                const headers = ['Sl.No', 'SMT ID', 'Section Officer', 'Sub-Division', 'Name of Scheme',
-                    'Handover Date', 'Final Bill Status', 'Fund Demand Status'
-                ];
-                const rows = filteredData.map((r, i) => [
+            const CSV_HEADERS = ['Sl.No', 'SMT ID', 'Section Officer', 'Sub-Division', 'Name of Scheme',
+                'Handover Date', 'Final Bill Status', 'Ebill Status (Division)', 'DC Approval',
+                'Fund Demand Status'
+            ];
+
+            function recordsToCSVRows(records) {
+                return records.map((r, i) => [
                     i + 1,
                     quoteCSV(r.smtId),
                     quoteCSV(r.sectionOfficer),
@@ -1442,18 +1512,28 @@
                     quoteCSV(r.schemeName),
                     quoteCSV(r.handoverDate),
                     quoteCSV(r.finalBillStatus),
+                    quoteCSV(r.ebillStatus),
+                    quoteCSV(r.dcApproval),
                     quoteCSV(r.fundDemandStatus),
                 ]);
-                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            }
+
+            function exportRecordsAsCSV(records, filenamePart) {
+                const rows = recordsToCSVRows(records);
+                const csvContent = [CSV_HEADERS.join(','), ...rows.map(r => r.join(','))].join('\n');
                 const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = 'PHE_JJM_Tinsukia_Scheme_Handover_' + new Date().toISOString().slice(0, 10) + '.csv';
+                link.download = `PHE_JJM_Tinsukia_${filenamePart}_${new Date().toISOString().slice(0, 10)}.csv`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+            }
+
+            function exportCSV() {
+                exportRecordsAsCSV(filteredData, 'Register_Export');
             }
 
             function quoteCSV(str) {
@@ -1477,6 +1557,9 @@
             filterSubDivision.addEventListener('change', applyAllFilters);
             filterOfficer.addEventListener('change', applyAllFilters);
             filterStatus.addEventListener('change', applyAllFilters);
+            filterEbillStatus.addEventListener('change', applyAllFilters);
+            filterDCApproval.addEventListener('change', applyAllFilters);
+            filterFundDemand.addEventListener('change', applyAllFilters);
             searchInput.addEventListener('input', debounce(applyAllFilters, 300));
 
             // Sortable columns
@@ -1517,87 +1600,9 @@
                 recordCount.textContent = `Showing ${filteredData.length} of ${allData.length} records`;
             }
 
-           // ─────────────────────────────────────
-            // KPI CARD EXPORT FUNCTION
-            // ─────────────────────────────────────
-            function exportKPIData(filterId, label) {
-                let dataToExport = [];
-                let filename = '';
-
-                if (filterId === 'district-total') {
-                    dataToExport = allData;
-                    filename = 'District_All_Schemes';
-                } else if (filterId === 'district-raised') {
-                    dataToExport = allData.filter(r => r.finalBillStatus === 'Raised');
-                    filename = 'District_Bill_Raised';
-                } else if (filterId === 'district-notRaised') {
-                    dataToExport = allData.filter(r => r.finalBillStatus === 'Not Raised');
-                    filename = 'District_Bill_Not_Raised';
-                } else if (filterId === 'district-fundRaised') {
-                    dataToExport = allData.filter(r => (r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'District_Fund_Demand_Raised';
-                } else if (filterId === 'district-billRaisedFundNot') {
-                    dataToExport = allData.filter(r => r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'District_Bill_Raised_Fund_Not_Raised';
-                } else if (filterId === 'tinsukia-total') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia'));
-                    filename = 'Tinsukia_All_Schemes';
-                } else if (filterId === 'tinsukia-raised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && r.finalBillStatus === 'Raised');
-                    filename = 'Tinsukia_Bill_Raised';
-                } else if (filterId === 'tinsukia-notRaised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && r.finalBillStatus === 'Not Raised');
-                    filename = 'Tinsukia_Bill_Not_Raised';
-                } else if (filterId === 'tinsukia-fundRaised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && (r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'Tinsukia_Fund_Demand_Raised';
-                } else if (filterId === 'tinsukia-billRaisedFundNot') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('tinsukia') && r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'Tinsukia_Bill_Raised_Fund_Not_Raised';
-                } else if (filterId === 'digboi-total') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi'));
-                    filename = 'Digboi_All_Schemes';
-                } else if (filterId === 'digboi-raised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && r.finalBillStatus === 'Raised');
-                    filename = 'Digboi_Bill_Raised';
-                } else if (filterId === 'digboi-notRaised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && r.finalBillStatus === 'Not Raised');
-                    filename = 'Digboi_Bill_Not_Raised';
-                } else if (filterId === 'digboi-fundRaised') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && (r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'Digboi_Fund_Demand_Raised';
-                } else if (filterId === 'digboi-billRaisedFundNot') {
-                    dataToExport = allData.filter(r => (r.subDivision || '').toLowerCase().includes('digboi') && r.finalBillStatus === 'Raised' && !(r.fundDemandStatus || '').toLowerCase().includes('raised'));
-                    filename = 'Digboi_Bill_Raised_Fund_Not_Raised';
-                }
-
-                // Generate CSV
-                const headers = ['Sl.No', 'SMT ID', 'Section Officer', 'Sub-Division', 'Name of Scheme', 'Handover Date', 'Final Bill Status', 'Fund Demand Status'];
-                const rows = dataToExport.map((r, i) => [
-                    i + 1,
-                    quoteCSV(r.smtId),
-                    quoteCSV(r.sectionOfficer),
-                    quoteCSV(r.subDivision),
-                    quoteCSV(r.schemeName),
-                    quoteCSV(r.handoverDate),
-                    quoteCSV(r.finalBillStatus),
-                    quoteCSV(r.fundDemandStatus),
-                ]);
-
-                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `PHE_JJM_Tinsukia_${filename}_${new Date().toISOString().slice(0, 10)}.csv`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            }
-
-            // Make exportKPIData globally accessible
-            window.exportKPIData = exportKPIData;
+            // Expose resetFilters/exportCSV for inline onclick handlers
+            window.resetFilters = resetFilters;
+            window.exportCSV = exportCSV;
 
             fetchData();
         })();

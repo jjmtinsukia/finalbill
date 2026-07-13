@@ -757,6 +757,134 @@
             }
         }
 
+        .btn-data-entry {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #fff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.25;
+            gap: 1px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .btn-data-entry:hover {
+            background: linear-gradient(135deg, #b91c1c, #991b1b);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+        }
+        .btn-data-entry small {
+            font-size: 0.62rem;
+            font-weight: 600;
+            opacity: 0.9;
+            letter-spacing: 0.03em;
+        }
+
+        /* Data Entry Login Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: modalIn 0.2s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            background: #1a237e;
+            color: #fff;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            opacity: 0.8;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            opacity: 1;
+        }
+        .modal-body {
+            padding: 20px 18px 4px;
+        }
+        .modal-note {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        .modal-body label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .modal-body input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 14px;
+            font-family: inherit;
+        }
+        .modal-body input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .modal-error {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 14px 18px;
+            border-top: 1px solid #f1f5f9;
+        }
+
         /* Footer */
         .footer-note {
             text-align: center;
@@ -788,9 +916,32 @@
             <div class="masthead-right">
                 <span class="jjm-logo">JJM</span>
                 <span class="gov-badge">🏛️ Government of Assam</span>
+                <button class="btn-data-entry" id="dataEntryBtn">🔐 Data Entry <small>(Office Use Only)</small></button>
             </div>
         </div>
     </header>
+
+    <!-- Data Entry Login Modal -->
+    <div class="modal-overlay" id="dataEntryModalOverlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>🔐 Data Entry Login</span>
+                <button class="modal-close" id="dataEntryModalClose">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-note">This section is for authorized office use only. Please sign in to continue to the data entry sheet.</p>
+                <label for="dataEntryUserId">User ID</label>
+                <input type="text" id="dataEntryUserId" placeholder="Enter User ID" autocomplete="off">
+                <label for="dataEntryPassword">Password</label>
+                <input type="password" id="dataEntryPassword" placeholder="Enter Password" autocomplete="off">
+                <div class="modal-error" id="dataEntryError" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-reset" id="dataEntryCancelBtn">Cancel</button>
+                <button class="btn btn-export" id="dataEntrySubmitBtn">Login &amp; Open</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Dashboard -->
     <div class="dashboard-container" id="dashboardRoot">
@@ -1696,6 +1847,63 @@
             searchInput.addEventListener('input', debounce(applyAllFilters, 300));
             const printKPIBtn = document.getElementById('printKPIBtn');
             if (printKPIBtn) printKPIBtn.addEventListener('click', printKPIReport);
+
+            // ─────────────────────────────────────
+            // DATA ENTRY LOGIN (Office Use Only)
+            // ─────────────────────────────────────
+            const DATA_ENTRY_USER = 'TSKFINAL';
+            const DATA_ENTRY_PASS = 'TSK202627';
+            const DATA_ENTRY_URL =
+                'https://docs.google.com/spreadsheets/d/1RaEVr2B5gc2bCDeo0IizyswL8levHYahcdghIV25PM8/edit?gid=0#gid=0';
+
+            const dataEntryBtn = document.getElementById('dataEntryBtn');
+            const dataEntryModalOverlay = document.getElementById('dataEntryModalOverlay');
+            const dataEntryUserId = document.getElementById('dataEntryUserId');
+            const dataEntryPassword = document.getElementById('dataEntryPassword');
+            const dataEntryError = document.getElementById('dataEntryError');
+            const dataEntrySubmitBtn = document.getElementById('dataEntrySubmitBtn');
+            const dataEntryCancelBtn = document.getElementById('dataEntryCancelBtn');
+            const dataEntryModalClose = document.getElementById('dataEntryModalClose');
+
+            function openDataEntryModal() {
+                dataEntryUserId.value = '';
+                dataEntryPassword.value = '';
+                dataEntryError.style.display = 'none';
+                dataEntryModalOverlay.classList.add('active');
+                setTimeout(() => dataEntryUserId.focus(), 50);
+            }
+
+            function closeDataEntryModal() {
+                dataEntryModalOverlay.classList.remove('active');
+            }
+
+            function attemptDataEntryLogin() {
+                const uid = dataEntryUserId.value.trim();
+                const pwd = dataEntryPassword.value.trim();
+                if (uid === DATA_ENTRY_USER && pwd === DATA_ENTRY_PASS) {
+                    closeDataEntryModal();
+                    window.open(DATA_ENTRY_URL, '_blank', 'noopener');
+                } else {
+                    dataEntryError.textContent = '❌ Invalid User ID or Password. Please try again.';
+                    dataEntryError.style.display = 'block';
+                }
+            }
+
+            if (dataEntryBtn) dataEntryBtn.addEventListener('click', openDataEntryModal);
+            if (dataEntryCancelBtn) dataEntryCancelBtn.addEventListener('click', closeDataEntryModal);
+            if (dataEntryModalClose) dataEntryModalClose.addEventListener('click', closeDataEntryModal);
+            if (dataEntrySubmitBtn) dataEntrySubmitBtn.addEventListener('click', attemptDataEntryLogin);
+            if (dataEntryModalOverlay) {
+                dataEntryModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === dataEntryModalOverlay) closeDataEntryModal();
+                });
+            }
+            [dataEntryUserId, dataEntryPassword].forEach(input => {
+                if (!input) return;
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') attemptDataEntryLogin();
+                });
+            });
 
             // Sortable columns
             document.querySelectorAll('#dataTable thead th[data-sort]').forEach(th => {
